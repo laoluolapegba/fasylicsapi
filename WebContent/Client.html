@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Directory</title>
+<style type="text/css">
+table.gridtable {
+	font-family: verdana, arial, sans-serif;
+	font-size: 11px;
+	color: #333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
+}
+table.gridtable th {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
+}
+table.gridtable td {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
+}
+</style>
+
+<script src="Scripts/jquery-1.11.0.js"></script>
+<script src="Scripts/jquery.ui.core.js"></script>
+<script src="Scripts/jquery.ui.datepicker.js" type="text/javascript"></script>
+
+<script>
+var msgArray = new Array();
+function Message(id, from, to, text, keyword, receivedAt){
+	this.id = id;
+   this.from = from;
+   this.to = to;
+   this.text = text;
+   this.keyword = keyword;
+   this.receivedAt = receivedAt;
+}
+$(document).ready(onReady);
+$(function() {
+	$("#createText").datepicker();
+	$("#editText").datepicker();
+	});
+	
+       function onReady(){
+    	   loadInitData();
+               
+    	$("#CreateLink").on("click",function(){
+          $("#CreateDiv").show();	
+          $("#Listiv").hide();
+          $("#DeleteDiv").hide();	
+          $("#EditDiv").hide();		  
+        })   
+        
+        
+        
+        $("#ListLink").on("click",function(){
+          var listTableBody = $("#listTableBody");
+          listTableBody.empty();
+          for(i=0;i<msgArray.length;i++){
+              msg = msgArray[i];
+        	  var row = $("<tr></tr>");
+        	  var id = $("<td>"+msg.id+"</td>");  
+              var from = $("<td>"+msg.from+"</td>");  
+              var to = $("<td>"+msg.to+"</td>");  
+              var text = $("<td>"+msg.text+"</td>");  
+              var keyword = $("<td>"+msg.keyword+"</td>");  
+              var receivedAt =  $("<td>"+msg.receivedAt+"</td>");
+              id.appendTo(row);
+              from.appendTo(row);
+              to.appendTo(row);
+              text.appendTo(row);
+              keyword.appendTo(row);
+              receivedAt.appendTo(row);
+    	      row.appendTo(listTableBody);
+          }
+          $("#Listiv").show();	
+          $("#CreateDiv").hide(); 
+          $("#DeleteDiv").hide();	
+          $("#EditDiv").hide();	 
+        })
+        
+        
+        $("#EditLink").on("click",function(){
+           var msgNameSelect = $("#editMsgId");
+           msgNameSelect.empty();
+           msgNameSelect.append("<option>Select a message id</option>")
+		   for(i=0;i<msgArray.length;i++){
+              msg = msgArray[i];
+              msgNameSelect.append('<option  value="' +i+ '"> ' + msg.id + '</option>');
+		   } 
+          $("#EditDiv").show();	
+          $("#CreateDiv").hide();	
+          $("#Listiv").hide();
+          $("#DeleteDiv").hide();		  
+        }) 
+        
+        
+        $("#DeleteLink").on("click",function(){
+           var msgsLi = $("#msgUl")
+           msgsLi.empty();
+		   for(i=0;i<msgArray.length;i++){
+              msg = msgArray[i];
+              var li = $("<li><a href='javascript:deleteBook("+i+")' id='deleteID_"+i+"'>"+msg.id+"</a></li>");
+              li.appendTo(msgsLi);
+		   } 
+          $("#DeleteDiv").show();	
+          $("#EditDiv").hide();	
+          $("#CreateDiv").hide();	
+          $("#Listiv").hide();	  
+        })
+        
+        $("#editMsgId").on('click',function(){
+          var editMsgID =  $("#editMsgId").val();
+          try{
+        	  var msg = msgArray[editMsgID];
+        	  $("#editFrom").val(msg.from);
+        	  $("#editTo").val(msg.to);
+        	  $("#editText").val(msg.text);
+          }catch(e){
+              console.log(e);
+          }
+        });
+        
+		$('#Create').on("click",function(){
+				var msgId = $("#createmsgId").val();
+				var from = $("#createFrom").val();
+				var to = $("#createTo").val();
+				var text = $("#createText").val();
+				var keyword = $("#createKeyword").val();
+				var receivedAt = $("#createreceivedAt").val();
+                var data = formToData(msgId,from,to,text,keyword,receivedAt);
+				console.log(data);
+				$.ajax({
+	                type: "POST",
+	                contentType:"application/json",
+	                url: "rest/messageservice/forwardmessage",
+	                dataType: 'json',
+	                data:data,
+	                cache: false,
+	                success: function (data, textStatus, xhr) {
+	                	console.log(textStatus);
+	                },
+	                error: function (data, textStatus, errorThrown) {
+	                    console.log(textStatus)
+	                }
+	            });
+			});
+		$('#Edit').on("click",function(){
+	           console.log("Inside Edit...")
+	           var editMsgID =  $("#editMsgId").val();
+	           console.log(editMsgID);
+				var msgId = msgArray[editMsgID].id;
+				var from = $("#editFrom").val();
+				var to = $("#editTo").val();
+				var text = $("#editText").val();
+				var keyword = $("#editKeyword").val();
+				var receivedAt = $("#editreceivedAt").val();
+	           var data = formToData(msgId,from,to,text,keyword,receivedAt);
+				console.log(data);
+				$.ajax({
+	               type: "PUT",
+	               contentType:"application/json",
+	               url: "rest/messageservice/forwardmessage/"+msgId,
+	               dataType: 'json',
+	               data:data,
+	               cache: false,
+	               success: function (data, textStatus, xhr) {
+	               	console.log(textStatus);
+	               },
+	               error: function (data, textStatus, errorThrown) {
+	                   console.log(textStatus)
+	               }
+	           });
+			});
+	}
+       function loadInitData(){
+    	   $.ajax({
+               type: "GET",
+               contentType:"application/json",
+               url: "rest/messageservice/messages",
+               dataType: 'json',
+               cache: false,
+               success: function (data, textStatus, xhr) {
+               	 createDataList(data);
+               },
+               error: function (data, textStatus, errorThrown) {
+                   console.log(textStatus)
+               }
+           });
+       }
+	   function deleteBook(deleteBookID){
+	           console.log("Inside Delete...")
+	           console.log( msgArray[deleteBookID].name);
+				var bookName = msgArray[deleteBookID].name;
+				$.ajax({
+	               type: "DELETE",
+	               contentType:"application/json",
+	               url: "rest/messageservice/forwardmesage/"+bookName,
+	               dataType: 'json',
+	               cache: false,
+	               success: function (data, textStatus, xhr) {
+	               	console.log(textStatus);
+	               },
+	               error: function (data, textStatus, errorThrown) {
+	                   console.log(textStatus)
+	               }
+	           });
+	   }
+	
+       function createDataList(JsonObject){
+           $.each(JsonObject,function(key,object){
+        	   var message = new Message(object.id,object.from,object.to,object.text,object.keyword,object.receivedAt);
+               msgArray.push(message);
+           });
+       }
+       
+       function formToData(msgId,from,to,text,keyword,receivedAt){
+          return JSON.stringify({
+              "id":msgId,
+              "from":from,
+              "to":to,
+              "text":text,
+              "keyword":keyword,
+              "receivedAt":new Date(receivedAt).toISOString()
+          });
+       }
+       
+</script>
+
+
+
+</head>
+<body id="body">
+	<h1>Message Service Deployed Methods</h1>
+	<ul>
+		<li><a href="#" id="ListLink">List [get]</a></li>
+		<li><a href="#" id="CreateLink">Forward Messages [post]</a></li>
+		  <li><a href="#" id="EditLink">Edit [put]</a></li>
+		<li><a href="#" id="DeleteLink">Delete [delete]</a></li>
+	</ul>
+	<div style="width: 450px; float: left;" id="Listiv" hidden="true">
+		<table class="gridtable">
+			<thead>
+				<tr>
+				<td>Id</td>
+					<td>Msisdn</td>
+					<td>Recipient</td>
+					<td>Text</td>
+					<td>Keyword</td>
+					<td>Date Received</td>
+				</tr>
+			</thead>
+			<tbody id="listTableBody">
+			</tbody>
+		</table>
+	</div>
+	<div style="width: 600px; float: left;" id="CreateDiv" hidden="true">
+		<fieldset>
+			<legend>Create new</legend>
+
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>Id :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='createmsgId' size='25'>
+			</div>
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>Msisdn :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='createFrom' size='10'>
+			</div>
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>To :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='createTo' size="10">
+			</div>
+			
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>Text :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='createText' size="10">
+			</div>
+			
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>Keyword :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='createKeyword' size="20">
+			</div>
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>ReceivedAt :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='createreceivedAt' size="20">
+			</div>
+			<form name="createBook" method="post" action="rest/list/create"
+				id="createBook">
+				<div style="float: right;">
+					<input type="button" value="Create" align="right" id="Create">
+					<input type="button" value="Clear" align="right">
+				</div>
+			</form>
+		</fieldset>
+	</div>
+
+	<div style="width: 600px; float: left;" id="EditDiv" hidden="true">
+		<fieldset>
+			<legend>Edit Msgs</legend>
+            
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>Name :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<select id='editMsgId'><option>Select a msg
+						title</option></select>
+			</div>
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>Isbn :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='editFrom' size='10'>
+			</div>
+			</br>
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label>Price :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='editTo' size="10">
+			</div>
+			<div style="width: 100px; float: left; margin-left: 5px;">
+				<label> Date :</label>
+			</div>
+			<div style="width: 400px; float: left;">
+				<input type='text' id='editText' size="20">
+			</div>
+			<form name="editBook" method="post" action="rest/list/edit"
+				id="editBook">
+				<div style="float: right;">
+					<input type="button" value="Edit" align="right" id="Edit">
+					<input type="button" value="Clear" align="right">
+				</div>
+			</form>
+		</fieldset>
+	</div>
+	<div style="width: 450px; float: left;" id="DeleteDiv" hidden="true">
+		<h3>Select a msg to delete</h3>
+		<ul id="msgUl">
+		</ul>
+	</div>
+</body>
+</html>
